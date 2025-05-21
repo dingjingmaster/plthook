@@ -196,12 +196,12 @@ typedef struct mem_prot {
 #define NUM_MEM_PROT 20
 
 struct plthook {
-    const Elf_Sym *dynsym;
-    const char *dynstr;
-    size_t dynstr_size;
-    const char *plt_addr_base;
-    const Elf_Plt_Rel *rela_plt;
-    size_t rela_plt_cnt;
+    const Elf_Sym *dynsym;              // 符号表位置
+    const char *dynstr;                 // 动态链接字符串表, 以 '\0' 分割，保存了：符号名称、共享库名称、其它动态链接所需字符串, 如文件路径
+    size_t dynstr_size;                 // 动态链接字符串表大小
+    const char *plt_addr_base;          // 共享库加载的基地址
+    const Elf_Plt_Rel *rela_plt;        // PTL重定位表位置
+    size_t rela_plt_cnt;                // PTL重定位表大小
 #ifdef R_GLOBAL_DATA
     const Elf_Plt_Rel *rela_dyn;
     size_t rela_dyn_cnt;
@@ -627,6 +627,7 @@ static int plthook_open_real(plthook_t **plthook_out, struct link_map *lmap)
     plthook.dynsym = (const Elf_Sym*)(dyn_addr_base + dyn->d_un.d_ptr);
 
     /* Check sizeof(Elf_Sym) */
+    // 符号表中每条的大小, 32bit cpu 一般是: 16字节，64bit cpu 一般是: 24字节
     dyn = find_dyn_by_tag(lmap->l_ld, DT_SYMENT);
     if (dyn == NULL) {
         set_errmsg("failed to find DT_SYMTAB");
@@ -638,6 +639,7 @@ static int plthook_open_real(plthook_t **plthook_out, struct link_map *lmap)
     }
 
     /* get .dynstr section */
+    // 动态条目结构，其值指向共享库或可执行文件中动态链接字符串表的内存地址
     dyn = find_dyn_by_tag(lmap->l_ld, DT_STRTAB);
     if (dyn == NULL) {
         set_errmsg("failed to find DT_STRTAB");
@@ -654,6 +656,9 @@ static int plthook_open_real(plthook_t **plthook_out, struct link_map *lmap)
     plthook.dynstr_size = dyn->d_un.d_val;
 
     /* get .rela.plt or .rel.plt section */
+    // 动态条目结构，其值指向共享库或可执行文件中与PLT相关的重定位表的内存地址
+    // PLT重定位表：这是ELF文件中一种特殊重定位表，专门用于处理 延迟绑定 的符号重定位，通常与过程链接表(PTL)相关。
+    // 这些重定位条目主要用于动态链接函数调用(如外部函数的地址解析)
     dyn = find_dyn_by_tag(lmap->l_ld, DT_JMPREL);
     if (dyn != NULL) {
         plthook.rela_plt = (const Elf_Plt_Rel *)(dyn_addr_base + dyn->d_un.d_ptr);

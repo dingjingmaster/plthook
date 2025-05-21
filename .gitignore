@@ -1,3 +1,5 @@
+.ccls-cache/
+.vscode/
 *~
 /test/android/libs/
 /test/android/obj/

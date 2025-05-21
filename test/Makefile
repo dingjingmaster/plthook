@@ -2,6 +2,7 @@
 # This Makefile works only with GNU make.
 #
 
+CUR := $(shell pwd)
 UNAME_S := $(shell uname -s)
 
 CFLAGS_SHARED = -shared -fPIC
@@ -61,7 +62,7 @@ libtest.$(SOEXT): libtest.c libtest.h
 	$(CC) $(CFLAGS_SHARED) $(CFLAGS) -DLIBTEST_DLL -o libtest.$(SOEXT) libtest.c -lm
 
 testprog$(EXEEXT): testprog.c ../$(PLTHOOK_C) libtest.h
-	$(CC) $(CFLAGS_EXE) $(CFLAGS) -o testprog$(EXEEXT) -I.. testprog.c ../$(PLTHOOK_C) -L. -ltest $(LIBS)
+	$(CC) $(CFLAGS_EXE) $(CFLAGS) -o testprog$(EXEEXT) -I.. testprog.c ../$(PLTHOOK_C) -L. -ltest -Wl,-rpath=$(CUR) $(LIBS)
 
 run_tests: clean libtest.$(SOEXT) testprog$(EXEEXT)
 	LD_LIBRARY_PATH=. $(KICK_CMD) ./testprog$(EXEEXT) open
